@@ -114,6 +114,43 @@
   stroke-width: 2;
 }
 
+.chart-hover-line {
+  stroke: rgba(255, 255, 255, 0.25);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 6;
+}
+
+.chart-hover-dot {
+  fill: #4caf50;
+  stroke: #10182c;
+  stroke-width: 2.5;
+}
+
+.chart-tooltip-box {
+  fill: rgba(11, 18, 33, 0.94);
+  stroke: rgba(255, 255, 255, 0.12);
+  stroke-width: 1;
+}
+
+.chart-tooltip-date {
+  font-size: 0.75rem;
+  fill: rgba(255, 255, 255, 0.72);
+  font-weight: 500;
+}
+
+.chart-tooltip-label {
+  font-size: 0.7rem;
+  fill: rgba(255, 255, 255, 0.56);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.chart-tooltip-value {
+  font-size: 0.9rem;
+  fill: #e8ecf1;
+  font-weight: 600;
+}
+
 .chart-placeholder {
   height: 240px;
   display: grid;

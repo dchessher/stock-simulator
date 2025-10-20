@@ -65,17 +65,56 @@ function StockChart({ data }: { data: StockPoint[] }) {
   const minPrice = Math.min(...data.map((d) => d.low))
   const maxPrice = Math.max(...data.map((d) => d.high))
   const priceRange = maxPrice - minPrice || 1
-  const points = data
-    .map((point, index) => {
-      const x = padding + (index / Math.max(1, data.length - 1)) * (width - padding * 2)
-      const y =
-        height - padding - ((point.close - minPrice) / priceRange) * (height - padding * 2)
-      return `${x},${y}`
+  const chartPoints = data.map((point, index) => {
+    const x = padding + (index / Math.max(1, data.length - 1)) * (width - padding * 2)
+    const y = height - padding - ((point.close - minPrice) / priceRange) * (height - padding * 2)
+    return { x, y, point }
+  })
+  const points = chartPoints.map(({ x, y }) => `${x},${y}`).join(' ')
+
+  const [hoverIndex, setHoverIndex] = useState<number | null>(null)
+  const hoveredPoint = hoverIndex !== null ? chartPoints[hoverIndex] : null
+  const tooltipConfig = (() => {
+    if (!hoveredPoint) return null
+    const tooltipWidth = 180
+    const tooltipHeight = 70
+    let tooltipX = hoveredPoint.x - tooltipWidth / 2
+    tooltipX = Math.max(padding, Math.min(tooltipX, width - padding - tooltipWidth))
+    let tooltipY = hoveredPoint.y - tooltipHeight - 12
+    if (tooltipY < padding) {
+      tooltipY = hoveredPoint.y + 12
+    }
+    const dateLabel = new Date(hoveredPoint.point.date).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
     })
-    .join(' ')
+    return { tooltipX, tooltipY, tooltipWidth, tooltipHeight, dateLabel }
+  })()
+
+  const handleMouseMove = (event: React.MouseEvent<SVGSVGElement>) => {
+    if (!chartPoints.length) return
+    const bounds = event.currentTarget.getBoundingClientRect()
+    const scaleX = width / bounds.width
+    const pointerX = (event.clientX - bounds.left) * scaleX
+    const ratio = (pointerX - padding) / (width - padding * 2)
+    const clampedRatio = Math.min(1, Math.max(0, ratio))
+    const index = Math.round(clampedRatio * (chartPoints.length - 1))
+    setHoverIndex(index)
+  }
+
+  const handleMouseLeave = () => {
+    setHoverIndex(null)
+  }
 
   return (
-    <svg className="stock-chart" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
+    <svg
+      className="stock-chart"
+      viewBox={`0 0 ${width} ${height}`}
+      preserveAspectRatio="none"
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+    >
       <defs>
         <linearGradient id="chartFill" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="rgba(76, 175, 80, 0.3)" />
@@ -96,6 +135,41 @@ function StockChart({ data }: { data: StockPoint[] }) {
         x2={width - padding}
         y2={height - padding}
       />
+      {hoveredPoint && tooltipConfig ? (
+        <g key={hoverIndex ?? undefined}>
+          <line
+            className="chart-hover-line"
+            x1={hoveredPoint.x}
+            y1={padding}
+            x2={hoveredPoint.x}
+            y2={height - padding}
+          />
+          <circle className="chart-hover-dot" cx={hoveredPoint.x} cy={hoveredPoint.y} r={5} />
+          <g className="chart-tooltip" transform={`translate(${tooltipConfig.tooltipX}, ${tooltipConfig.tooltipY})`}>
+            <rect
+              className="chart-tooltip-box"
+              width={tooltipConfig.tooltipWidth}
+              height={tooltipConfig.tooltipHeight}
+              rx={10}
+            />
+            <text className="chart-tooltip-date" x={16} y={24}>
+              {tooltipConfig.dateLabel}
+            </text>
+            <text className="chart-tooltip-label" x={16} y={42}>
+              High
+            </text>
+            <text className="chart-tooltip-value" x={tooltipConfig.tooltipWidth - 16} y={42} textAnchor="end">
+              {formatCurrency(hoveredPoint.point.high)}
+            </text>
+            <text className="chart-tooltip-label" x={16} y={60}>
+              Low
+            </text>
+            <text className="chart-tooltip-value" x={tooltipConfig.tooltipWidth - 16} y={60} textAnchor="end">
+              {formatCurrency(hoveredPoint.point.low)}
+            </text>
+          </g>
+        </g>
+      ) : null}
     </svg>
   )
 }
